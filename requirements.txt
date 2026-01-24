@@ -17,6 +17,11 @@ python-dateutil>=2.8.0
 # HTTP requests (for Elastic Agent Builder API)
 httpx>=0.25.0
 
+# Dashboard
+streamlit>=1.30.0
+plotly>=5.18.0
+pandas>=2.0.0
+
 # Testing
 pytest>=7.0.0
 pytest-asyncio>=0.23.0

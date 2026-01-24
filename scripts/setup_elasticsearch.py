@@ -135,40 +135,61 @@ def main():
     count = client.count(index=LOG_INDEX)
     print(f"Total documents in {LOG_INDEX}: {count['count']}")
 
-    # Show some stats
+    # Show some stats (use keyword subfields for aggregations)
     print("\n[Stats] Log distribution by service:")
-    agg_result = client.search(
-        index=LOG_INDEX,
-        body={
-            "size": 0,
-            "aggs": {
-                "services": {
-                    "terms": {"field": "service.name", "size": 10}
+    try:
+        agg_result = client.search(
+            index=LOG_INDEX,
+            body={
+                "size": 0,
+                "aggs": {
+                    "services": {
+                        "terms": {"field": "service.name.keyword", "size": 10}
+                    }
                 }
             }
-        }
-    )
-    for bucket in agg_result["aggregations"]["services"]["buckets"]:
-        print(f"  - {bucket['key']}: {bucket['doc_count']} logs")
+        )
+        for bucket in agg_result["aggregations"]["services"]["buckets"]:
+            print(f"  - {bucket['key']}: {bucket['doc_count']} logs")
+    except Exception as e:
+        print(f"  Could not aggregate by service: {e}")
 
     print("\n[Stats] Log distribution by level:")
-    agg_result = client.search(
-        index=LOG_INDEX,
-        body={
-            "size": 0,
-            "aggs": {
-                "levels": {
-                    "terms": {"field": "log.level", "size": 10}
+    try:
+        agg_result = client.search(
+            index=LOG_INDEX,
+            body={
+                "size": 0,
+                "aggs": {
+                    "levels": {
+                        "terms": {"field": "log.level.keyword", "size": 10}
+                    }
                 }
             }
-        }
-    )
-    for bucket in agg_result["aggregations"]["levels"]["buckets"]:
-        print(f"  - {bucket['key']}: {bucket['doc_count']} logs")
+        )
+        for bucket in agg_result["aggregations"]["levels"]["buckets"]:
+            print(f"  - {bucket['key']}: {bucket['doc_count']} logs")
+    except Exception as e:
+        print(f"  Could not aggregate by level: {e}")
+
+    # Create sample investigations for demo
+    print("\n[5/5] Creating sample investigations...")
+    try:
+        from src.tools.save_investigation import create_sample_investigations
+        investigation_ids = create_sample_investigations(client)
+        print(f"Created {len(investigation_ids)} sample investigations:")
+        for inv_id in investigation_ids:
+            print(f"  - {inv_id}")
+    except Exception as e:
+        print(f"  Warning: Could not create sample investigations: {e}")
 
     print("\n" + "=" * 60)
     print("Setup complete! LogSleuth is ready to use.")
     print("=" * 60)
+    print("\nNext steps:")
+    print("  1. Test queries: python scripts/test_queries.py")
+    print("  2. Run CLI: python -m src.cli investigate 'timeout errors'")
+    print("  3. Deploy to Agent Builder: python scripts/deploy_agent.py --dry-run")
 
 
 if __name__ == "__main__":

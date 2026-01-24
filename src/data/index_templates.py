@@ -127,8 +127,6 @@ LOG_INDEX_MAPPING = {
         }
     },
     "settings": {
-        "number_of_shards": 1,
-        "number_of_replicas": 0,  # For development; increase for production
         "index": {
             "refresh_interval": "5s",
         }
@@ -192,8 +190,9 @@ INVESTIGATION_INDEX_MAPPING = {
         }
     },
     "settings": {
-        "number_of_shards": 1,
-        "number_of_replicas": 0,
+        "index": {
+            "refresh_interval": "5s",
+        }
     }
 }
 
