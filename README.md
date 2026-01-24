@@ -31,6 +31,38 @@ LogSleuth is a multi-step AI agent that automates incident investigation:
 - Similar past incident matching
 - Remediation suggestions
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        User Interface                           │
+│                  (CLI / Simple Web Dashboard)                   │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Elastic Agent Builder                        │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                   LogSleuth Agent                         │  │
+│  │                                                           │  │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────────┐   │  │
+│  │  │ Intake  │→ │ Search  │→ │Correlate│→ │  Summarize  │   │  │
+│  │  │  Tool   │  │  Tool   │  │  Tool   │  │    Tool     │   │  │
+│  │  └─────────┘  └─────────┘  └─────────┘  └─────────────┘   │  │
+│  │                                                           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       Elasticsearch                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │ logs-*      │  │ metrics-*   │  │ incidents-history       │  │
+│  │ (App Logs)  │  │ (Optional)  │  │ (Past Investigations)   │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## Tech Stack
 
 | Component | Technology |
@@ -165,7 +197,6 @@ logsleuth/
 ├── tests/
 ├── .env.example
 ├── requirements.txt
-├── DEVELOPMENT_PLAN.md
 ├── LICENSE                      # MIT (required for hackathon)
 └── README.md
 ```
@@ -186,26 +217,6 @@ The synthetic data includes two incident scenarios:
 - inventory-service becomes slow under load
 - Thread pool exhaustion
 - Cascading timeouts across services
-
----
-
-## Development
-
-See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for the full implementation roadmap.
-
-### Current Status: Phase 1 Complete
-
-- [x] Project structure
-- [x] Elasticsearch client configuration
-- [x] ECS-compatible index templates
-- [x] Synthetic log generator with incidents
-- [x] Data ingestion script
-- [x] Query validation tests
-
-### Next: Phase 2 - Agent Core
-- [ ] Implement Agent Builder tools
-- [ ] Create LogSleuth agent
-- [ ] Test investigation flow
 
 ---
 
