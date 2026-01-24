@@ -4,6 +4,8 @@
 
 Built for the [Elasticsearch Agent Builder Hackathon](https://elasticsearch.devpost.com/) (Jan 22 - Feb 27, 2026).
 
+![LogSleuth Dashboard](docs/dashboard.png)
+
 ## Problem
 
 When production incidents occur, engineers waste 30-60 minutes manually:
