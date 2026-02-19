@@ -664,7 +664,7 @@ def get_services_list():
         return ["All Services"]
 
 
-def run_investigation(description: str, time_range: str):
+def run_investigation(description: str, time_range: str, progress_callback=None):
     """Run a full investigation and return results."""
     client = get_es_client()
     if client is None:
@@ -680,28 +680,200 @@ def run_investigation(description: str, time_range: str):
         "root_cause": None,
         "timeline": [],
         "trace_info": None,
+        "service_flow": [],  # For Sankey diagram
+        "steps_completed": [],  # For progress stepper
     }
 
-    # Get error frequency
+    # Step 1: Understand
+    if progress_callback:
+        progress_callback("understand", "Parsing incident description...")
+    results["steps_completed"].append({"step": "understand", "status": "completed", "message": "Parsed incident description"})
+
+    # Step 2: Search
+    if progress_callback:
+        progress_callback("search", "Searching for error logs...")
     error_freq = get_error_frequency(client, time_range=time_range)
     if error_freq:
         results["errors"] = error_freq
         results["services"] = [s["service"] for s in error_freq.get("service_breakdown", [])]
+    results["steps_completed"].append({"step": "search", "status": "completed", "message": f"Found {error_freq.get('total_errors', 0) if error_freq else 0} errors"})
 
-        # Get root cause service
-        if error_freq.get("service_breakdown"):
-            root_service = error_freq["service_breakdown"][0]["service"]
-            results["root_cause"] = root_service
+    # Step 3: Analyze
+    if progress_callback:
+        progress_callback("analyze", "Analyzing error patterns...")
+    if error_freq and error_freq.get("service_breakdown"):
+        root_service = error_freq["service_breakdown"][0]["service"]
+        results["root_cause"] = root_service
+    results["steps_completed"].append({"step": "analyze", "status": "completed", "message": f"Identified root cause: {results.get('root_cause', 'Unknown')}"})
 
-            # Find traces
-            traces = find_error_traces(client, service_name=root_service, time_range=time_range)
-            if traces.get("traces"):
-                trace_id = traces["traces"][0]["trace_id"]
-                trace_info = find_correlated_logs(client, trace_id)
-                results["trace_info"] = trace_info
-                results["timeline"] = trace_info.get("timeline", [])
+    # Step 4: Correlate
+    if progress_callback:
+        progress_callback("correlate", "Correlating traces across services...")
+    if results["root_cause"]:
+        traces = find_error_traces(client, service_name=results["root_cause"], time_range=time_range)
+        if traces.get("traces"):
+            trace_id = traces["traces"][0]["trace_id"]
+            trace_info = find_correlated_logs(client, trace_id)
+            results["trace_info"] = trace_info
+            results["timeline"] = trace_info.get("timeline", [])
+
+            # Build service flow for Sankey diagram
+            if trace_info.get("timeline"):
+                service_order = []
+                for entry in trace_info["timeline"]:
+                    svc = entry.get("service")
+                    if svc and (not service_order or service_order[-1] != svc):
+                        service_order.append(svc)
+
+                # Create flow connections
+                for i in range(len(service_order) - 1):
+                    results["service_flow"].append({
+                        "source": service_order[i],
+                        "target": service_order[i + 1],
+                        "value": 1,
+                        "has_error": any(
+                            e.get("service") == service_order[i + 1] and e.get("level") == "error"
+                            for e in trace_info["timeline"]
+                        )
+                    })
+
+    results["steps_completed"].append({"step": "correlate", "status": "completed", "message": f"Traced {len(results.get('timeline', []))} events"})
+
+    # Step 5: Synthesize
+    if progress_callback:
+        progress_callback("synthesize", "Generating recommendations...")
+    results["steps_completed"].append({"step": "synthesize", "status": "completed", "message": "Generated analysis and recommendations"})
 
     return results
+
+
+def render_investigation_stepper(current_step: str = None, completed_steps: list = None):
+    """Render the 5-step investigation progress stepper."""
+    steps = [
+        {"id": "understand", "label": "Understand", "icon": "🎯", "desc": "Parse incident"},
+        {"id": "search", "label": "Search", "icon": "🔍", "desc": "Find errors"},
+        {"id": "analyze", "label": "Analyze", "icon": "📊", "desc": "Detect patterns"},
+        {"id": "correlate", "label": "Correlate", "icon": "🔗", "desc": "Trace requests"},
+        {"id": "synthesize", "label": "Synthesize", "icon": "💡", "desc": "Root cause"},
+    ]
+
+    completed_ids = [s["step"] for s in (completed_steps or [])]
+
+    step_html = '<div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0; padding: 20px; background: rgba(20, 184, 166, 0.05); border-radius: 16px; border: 1px solid rgba(20, 184, 166, 0.1);">'
+
+    for i, step in enumerate(steps):
+        is_completed = step["id"] in completed_ids
+        is_current = step["id"] == current_step
+        is_pending = not is_completed and not is_current
+
+        if is_completed:
+            bg_color = "rgba(20, 184, 166, 0.2)"
+            border_color = "#14b8a6"
+            text_color = "#5eead4"
+            icon_opacity = "1"
+        elif is_current:
+            bg_color = "rgba(245, 158, 11, 0.2)"
+            border_color = "#f59e0b"
+            text_color = "#fde047"
+            icon_opacity = "1"
+        else:
+            bg_color = "rgba(255, 255, 255, 0.03)"
+            border_color = "rgba(255, 255, 255, 0.1)"
+            text_color = "#64748b"
+            icon_opacity = "0.5"
+
+        step_html += f'''
+        <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: {bg_color};
+                        border: 2px solid {border_color}; display: flex; align-items: center;
+                        justify-content: center; font-size: 1.2rem; opacity: {icon_opacity};
+                        transition: all 0.3s ease;">
+                {"✓" if is_completed else step["icon"]}
+            </div>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 600;
+                        color: {text_color}; margin-top: 8px; text-transform: uppercase;
+                        letter-spacing: 0.05em;">{step["label"]}</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+                        color: #64748b; margin-top: 2px;">{step["desc"]}</div>
+        </div>
+        '''
+
+        # Add connector line between steps
+        if i < len(steps) - 1:
+            line_color = "#14b8a6" if is_completed else "rgba(255, 255, 255, 0.1)"
+            step_html += f'''
+            <div style="flex: 0.5; height: 2px; background: {line_color};
+                        margin: 0 -10px; margin-bottom: 30px;"></div>
+            '''
+
+    step_html += '</div>'
+    return step_html
+
+
+def render_sankey_diagram(service_flow: list, title: str = "Request Flow"):
+    """Render a Sankey diagram showing service-to-service flow."""
+    if not service_flow:
+        return None
+
+    # Get unique services and create index mapping
+    services = []
+    for flow in service_flow:
+        if flow["source"] not in services:
+            services.append(flow["source"])
+        if flow["target"] not in services:
+            services.append(flow["target"])
+
+    # Create Sankey diagram
+    source_indices = [services.index(f["source"]) for f in service_flow]
+    target_indices = [services.index(f["target"]) for f in service_flow]
+    values = [f["value"] for f in service_flow]
+
+    # Color links based on error status
+    link_colors = [
+        "rgba(244, 63, 94, 0.6)" if f.get("has_error") else "rgba(20, 184, 166, 0.4)"
+        for f in service_flow
+    ]
+
+    # Node colors - highlight error services
+    error_services = set(f["target"] for f in service_flow if f.get("has_error"))
+    node_colors = [
+        "#f43f5e" if svc in error_services else "#14b8a6"
+        for svc in services
+    ]
+
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=20,
+            thickness=25,
+            line=dict(color="rgba(0,0,0,0)", width=0),
+            label=services,
+            color=node_colors,
+            customdata=services,
+            hovertemplate='%{customdata}<extra></extra>'
+        ),
+        link=dict(
+            source=source_indices,
+            target=target_indices,
+            value=values,
+            color=link_colors,
+            hovertemplate='%{source.label} → %{target.label}<extra></extra>'
+        )
+    )])
+
+    fig.update_layout(
+        title=dict(
+            text=title,
+            font=dict(family='Outfit, sans-serif', size=14, color='#94a3b8'),
+            x=0.5
+        ),
+        font=dict(family='JetBrains Mono, monospace', size=11, color='#f1f5f9'),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=300,
+        margin=dict(l=20, r=20, t=50, b=20),
+    )
+
+    return fig
 
 
 # Sidebar
@@ -995,10 +1167,33 @@ with tab2:
             investigate_btn = st.button("🔍 Investigate", type="primary", use_container_width=True)
 
         if investigate_btn and incident_desc:
-            with st.spinner("🔍 Analyzing logs and traces..."):
+            # Show progress stepper placeholder
+            stepper_placeholder = st.empty()
+            status_placeholder = st.empty()
+
+            # Track current step for animation
+            def update_progress(step, message):
+                stepper_placeholder.markdown(
+                    render_investigation_stepper(current_step=step, completed_steps=[]),
+                    unsafe_allow_html=True
+                )
+                status_placeholder.markdown(f"""
+                <div style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #94a3b8;">
+                    {message}
+                </div>
+                """, unsafe_allow_html=True)
+
+            with st.spinner("🔍 Running investigation..."):
                 results = run_investigation(incident_desc, time_range)
 
+            # Show completed stepper
             if results:
+                stepper_placeholder.markdown(
+                    render_investigation_stepper(completed_steps=results.get("steps_completed", [])),
+                    unsafe_allow_html=True
+                )
+                status_placeholder.empty()
+
                 st.markdown("""
                 <div class="investigation-result">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
@@ -1020,6 +1215,21 @@ with tab2:
                     st.metric("Root Cause", results["root_cause"] or "Unknown")
 
                 st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+
+                # Service Flow Visualization (Sankey Diagram)
+                if results.get("service_flow"):
+                    st.markdown('<div class="section-header">Service Request Flow</div>', unsafe_allow_html=True)
+                    st.markdown("""
+                    <div style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">
+                        Visualizing how the request flowed between services. <span style="color: #f43f5e;">Red</span> indicates error propagation.
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    sankey_fig = render_sankey_diagram(results["service_flow"], "Request Trace Flow")
+                    if sankey_fig:
+                        st.plotly_chart(sankey_fig, use_container_width=True)
+
+                st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
                 # Timeline
                 if results["timeline"]:

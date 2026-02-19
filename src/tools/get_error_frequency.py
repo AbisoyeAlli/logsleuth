@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 
-from src.utils.elasticsearch_client import LOG_INDEX
+from src.utils.elasticsearch_client import LOG_INDEX, cached_query
 
 
 # ES|QL query for Agent Builder deployment

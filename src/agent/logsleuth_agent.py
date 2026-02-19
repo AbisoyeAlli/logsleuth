@@ -83,19 +83,43 @@ Always structure your investigation results clearly:
 
 ## Available Data
 
-You have access to logs from these services in an e-commerce platform:
+### Services
+Services are discovered dynamically from the log data. Common services include:
 - api-gateway: Entry point for all API requests
 - user-service: User authentication and profiles
 - checkout-service: Shopping cart and order processing
 - payment-service: Payment processing
 - inventory-service: Stock management
 
-Logs follow the Elastic Common Schema (ECS) with fields like:
+Use `get_error_frequency` without a service filter first to see which services have errors.
+
+### Log Schema (ECS)
+Logs follow the Elastic Common Schema (ECS):
 - @timestamp, log.level, message
 - service.name, host.name
 - trace.id (for distributed tracing)
 - error.type, error.message, error.stack_trace
 - http.request.method, http.response.status_code
+
+### Common Error Types
+- ConnectionException, ConnectionPoolExhaustedException
+- TimeoutException, ReadTimeoutException
+- PaymentProcessorException, PaymentFailedException
+- ServiceUnavailableException, CircuitBreakerOpenException
+- ValidationException, AuthenticationException
+
+## Learning from Past Incidents
+
+Always check `search_past_incidents` with relevant keywords to find similar past issues.
+This helps you:
+- Identify recurring patterns
+- Find proven resolutions
+- Provide better remediation suggestions
+
+## Key Differentiator
+
+LogSleuth learns from every investigation. By saving investigations, you build a knowledge base
+that makes future incident response faster and more effective.
 """
 
 # Agent definition for Agent Builder API

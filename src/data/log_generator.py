@@ -506,6 +506,246 @@ def generate_timeout_cascade_incident(
     return logs
 
 
+def generate_payment_outage_cascade(
+    incident_time: datetime,
+) -> List[LogEntry]:
+    """
+    Generate a compelling payment outage cascade scenario for hackathon demo.
+
+    This scenario shows:
+    1. Third-party payment processor goes down
+    2. Payment service starts failing
+    3. Retry storms overwhelm the payment service
+    4. Checkout service sees failures cascade
+    5. API gateway returns 500s to users
+    6. Clear trace showing the entire cascade
+
+    This is THE demo scenario that shows LogSleuth's value.
+    """
+    logs = []
+
+    # Create a few traces that will show the full cascade
+    demo_traces = [generate_trace_id() for _ in range(5)]
+
+    # Phase 1: Payment processor starts returning errors (T+0)
+    logs.append(LogEntry(
+        timestamp=incident_time,
+        service_name="payment-service",
+        log_level="warn",
+        message="Payment processor returned non-200 status: 503 Service Unavailable",
+        trace_id=demo_traces[0],
+        span_id=generate_span_id(),
+        error_type="PaymentProcessorException",
+        error_message="External payment gateway returned 503",
+        http_method="POST",
+        http_path="/payments/process",
+        http_status_code=503,
+        event_outcome="failure",
+        user_id="user-8472",
+        labels={"processor": "stripe", "amount": "149.99", "currency": "USD"},
+    ))
+
+    # More immediate failures
+    for i in range(8):
+        logs.append(LogEntry(
+            timestamp=incident_time + timedelta(seconds=1 + i * 0.3),
+            service_name="payment-service",
+            log_level="error",
+            message=f"Payment processing failed - processor unavailable (attempt {i+1}/3)",
+            trace_id=demo_traces[min(i % 3, 2)],
+            span_id=generate_span_id(),
+            error_type="PaymentProcessorException",
+            error_message="Connection to payment processor refused",
+            http_method="POST",
+            http_path="/payments/process",
+            http_status_code=503,
+            event_outcome="failure",
+            user_id=f"user-{8400 + i}",
+            labels={"retry_attempt": str((i % 3) + 1), "processor": "stripe"},
+        ))
+
+    # Phase 2: Retry storms begin (T+5s)
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=5),
+        service_name="payment-service",
+        log_level="warn",
+        message="High retry rate detected - 50 retries/sec exceeds threshold of 20/sec",
+        trace_id=generate_trace_id(),
+        span_id=generate_span_id(),
+        labels={"retry_rate": "50", "threshold": "20", "alert": "retry_storm"},
+    ))
+
+    # Phase 3: Connection pool exhaustion (T+10s)
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=10),
+        service_name="payment-service",
+        log_level="error",
+        message="HTTP connection pool exhausted - cannot create new connections to payment processor",
+        trace_id=generate_trace_id(),
+        span_id=generate_span_id(),
+        error_type="ConnectionPoolExhaustedException",
+        error_message="Timeout waiting for connection from pool (max=100)",
+        error_stack_trace="""java.util.concurrent.TimeoutException: Timeout waiting for connection from pool
+    at org.apache.http.pool.AbstractConnPool.getPoolEntryBlocking(AbstractConnPool.java:393)
+    at com.payment.service.PaymentClient.processPayment(PaymentClient.java:142)
+    at com.payment.service.PaymentHandler.handle(PaymentHandler.java:67)""",
+        labels={"pool_size": "100", "active_connections": "100", "waiting_threads": "45"},
+    ))
+
+    # Phase 4: Cascade to checkout (T+12s) - Create a clear trace showing the cascade
+    main_trace = demo_traces[0]
+
+    # This trace will show the full flow from api-gateway -> checkout -> payment
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=12, milliseconds=0),
+        service_name="api-gateway",
+        log_level="info",
+        message="Received POST /api/v1/checkout - starting checkout flow",
+        trace_id=main_trace,
+        span_id=generate_span_id(),
+        http_method="POST",
+        http_path="/api/v1/checkout",
+        event_outcome="success",
+        user_id="user-9123",
+        labels={"cart_items": "3", "total": "299.97"},
+    ))
+
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=12, milliseconds=50),
+        service_name="checkout-service",
+        log_level="info",
+        message="Processing checkout request for user-9123",
+        trace_id=main_trace,
+        span_id=generate_span_id(),
+        http_method="POST",
+        http_path="/checkout/complete",
+        user_id="user-9123",
+        labels={"cart_value": "299.97", "items": "3"},
+    ))
+
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=12, milliseconds=100),
+        service_name="checkout-service",
+        log_level="info",
+        message="Calling payment service to process payment",
+        trace_id=main_trace,
+        span_id=generate_span_id(),
+        labels={"amount": "299.97", "payment_method": "credit_card"},
+    ))
+
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=12, milliseconds=150),
+        service_name="payment-service",
+        log_level="error",
+        message="Failed to process payment - connection pool exhausted",
+        trace_id=main_trace,
+        span_id=generate_span_id(),
+        error_type="ConnectionPoolExhaustedException",
+        error_message="Cannot acquire connection from pool",
+        http_method="POST",
+        http_path="/payments/process",
+        http_status_code=503,
+        event_outcome="failure",
+        user_id="user-9123",
+        labels={"amount": "299.97"},
+    ))
+
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=12, milliseconds=200),
+        service_name="checkout-service",
+        log_level="error",
+        message="Payment service call failed - checkout cannot be completed",
+        trace_id=main_trace,
+        span_id=generate_span_id(),
+        error_type="PaymentFailedException",
+        error_message="Upstream payment service returned 503",
+        http_method="POST",
+        http_path="/checkout/complete",
+        http_status_code=500,
+        event_outcome="failure",
+        user_id="user-9123",
+        labels={"failure_reason": "payment_service_unavailable"},
+    ))
+
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=12, milliseconds=250),
+        service_name="api-gateway",
+        log_level="error",
+        message="Checkout request failed - returning 500 to client",
+        trace_id=main_trace,
+        span_id=generate_span_id(),
+        error_type="UpstreamServiceException",
+        error_message="Checkout service returned error",
+        http_method="POST",
+        http_path="/api/v1/checkout",
+        http_status_code=500,
+        event_outcome="failure",
+        user_id="user-9123",
+        labels={"client_ip": "192.168.1.100", "user_agent": "Mozilla/5.0"},
+    ))
+
+    # Phase 5: Many more failures across different traces (T+15s - T+45s)
+    for i in range(25):
+        trace = generate_trace_id()
+        base_ts = incident_time + timedelta(seconds=15 + i * 1.2)
+
+        # Each request shows the cascade
+        logs.append(LogEntry(
+            timestamp=base_ts,
+            service_name="payment-service",
+            log_level="error",
+            message="Payment processing failed - connection pool exhausted",
+            trace_id=trace,
+            span_id=generate_span_id(),
+            error_type="ConnectionPoolExhaustedException",
+            error_message="Cannot acquire connection from pool",
+            http_method="POST",
+            http_path="/payments/process",
+            http_status_code=503,
+            event_outcome="failure",
+            user_id=f"user-{9200 + i}",
+        ))
+
+        logs.append(LogEntry(
+            timestamp=base_ts + timedelta(milliseconds=50),
+            service_name="checkout-service",
+            log_level="error",
+            message="Checkout failed due to payment service error",
+            trace_id=trace,
+            span_id=generate_span_id(),
+            error_type="PaymentFailedException",
+            error_message="Payment processing unavailable",
+            http_method="POST",
+            http_path="/checkout/complete",
+            http_status_code=500,
+            event_outcome="failure",
+            user_id=f"user-{9200 + i}",
+        ))
+
+    # Phase 6: Alert and impact metrics (T+30s)
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=30),
+        service_name="api-gateway",
+        log_level="error",
+        message="CRITICAL: Error rate exceeded 10% threshold - 23.5% of requests failing",
+        trace_id=generate_trace_id(),
+        span_id=generate_span_id(),
+        labels={"error_rate": "23.5%", "affected_endpoint": "/api/v1/checkout", "alert_severity": "critical"},
+    ))
+
+    logs.append(LogEntry(
+        timestamp=incident_time + timedelta(seconds=35),
+        service_name="checkout-service",
+        log_level="error",
+        message="INCIDENT DETECTED: 89 failed checkouts in last 60 seconds - potential revenue loss $26,847",
+        trace_id=generate_trace_id(),
+        span_id=generate_span_id(),
+        labels={"failed_checkouts": "89", "estimated_revenue_loss": "26847", "alert": "incident_detected"},
+    ))
+
+    return logs
+
+
 def generate_full_dataset(
     base_time: Optional[datetime] = None,
     include_incidents: bool = True,
@@ -541,10 +781,16 @@ def generate_full_dataset(
         db_incident_logs = generate_database_failure_incident(incident_time_1)
         all_logs.extend(db_incident_logs)
 
-        # Incident 2: Timeout cascade at T+90 minutes
+        # Incident 2: Payment outage cascade at T+75 minutes (THE DEMO SCENARIO)
+        print("Generating payment outage cascade (demo scenario)...")
+        incident_time_2 = base_time + timedelta(minutes=75)
+        payment_incident_logs = generate_payment_outage_cascade(incident_time_2)
+        all_logs.extend(payment_incident_logs)
+
+        # Incident 3: Timeout cascade at T+90 minutes
         print("Generating timeout cascade incident...")
-        incident_time_2 = base_time + timedelta(minutes=90)
-        timeout_incident_logs = generate_timeout_cascade_incident(incident_time_2)
+        incident_time_3 = base_time + timedelta(minutes=90)
+        timeout_incident_logs = generate_timeout_cascade_incident(incident_time_3)
         all_logs.extend(timeout_incident_logs)
 
     # Sort all logs by timestamp

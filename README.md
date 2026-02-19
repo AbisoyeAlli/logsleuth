@@ -36,34 +36,110 @@ LogSleuth is a multi-step AI agent that automates incident investigation:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        User Interface                           │
-│                  (CLI / Simple Web Dashboard)                   │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Elastic Agent Builder                        │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │                   LogSleuth Agent                         │  │
-│  │                                                           │  │
-│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────────┐   │  │
-│  │  │ Intake  │→ │ Search  │→ │Correlate│→ │  Summarize  │   │  │
-│  │  │  Tool   │  │  Tool   │  │  Tool   │  │    Tool     │   │  │
-│  │  └─────────┘  └─────────┘  └─────────┘  └─────────────┘   │  │
-│  │                                                           │  │
-│  └───────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       Elasticsearch                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │ logs-*      │  │ metrics-*   │  │ incidents-history       │  │
-│  │ (App Logs)  │  │ (Optional)  │  │ (Past Investigations)   │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           USER INTERFACE LAYER                               │
+│  ┌────────────────────┐   ┌────────────────────┐   ┌────────────────────┐   │
+│  │   Streamlit Web    │   │    Python CLI      │   │    Agent Builder   │   │
+│  │    Dashboard       │   │   (Rich Console)   │   │   Chat Interface   │   │
+│  │  ┌──────────────┐  │   │                    │   │                    │   │
+│  │  │ • Metrics    │  │   │  logsleuth         │   │  "What caused the  │   │
+│  │  │ • Charts     │  │   │  investigate       │   │   payment errors?" │   │
+│  │  │ • Sankey     │  │   │  "payment errors"  │   │                    │   │
+│  │  │ • Timeline   │  │   │                    │   │                    │   │
+│  │  └──────────────┘  │   │                    │   │                    │   │
+│  └────────────────────┘   └────────────────────┘   └────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          ORCHESTRATION LAYER                                 │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    Investigation Orchestrator                          │  │
+│  │                                                                        │  │
+│  │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐        │  │
+│  │   │    1     │    │    2     │    │    3     │    │    4     │        │  │
+│  │   │UNDERSTAND│ →  │  SEARCH  │ →  │ ANALYZE  │ →  │CORRELATE │        │  │
+│  │   │  Parse   │    │  Query   │    │ Patterns │    │  Traces  │        │  │
+│  │   │ Incident │    │   Logs   │    │ & Spikes │    │ & Links  │        │  │
+│  │   └──────────┘    └──────────┘    └──────────┘    └──────────┘        │  │
+│  │                                                          │             │  │
+│  │                                                          ▼             │  │
+│  │                                                   ┌──────────┐         │  │
+│  │                              ← ─ ─ ─ ─ ─ ─ ─ ─ ─ │    5     │         │  │
+│  │                                                   │SYNTHESIZE│         │  │
+│  │                                                   │Root Cause│         │  │
+│  │                                                   │ & Report │         │  │
+│  │                                                   └──────────┘         │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              TOOL LAYER                                      │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
+│  │search_logs  │ │get_error_   │ │find_        │ │search_past_incidents   ││
+│  │             │ │frequency    │ │correlated_  │ │                        ││
+│  │ • Query     │ │             │ │logs         │ │ • Knowledge base       ││
+│  │ • Filters   │ │ • Spikes    │ │             │ │ • Similar incidents    ││
+│  │ • Time range│ │ • Histogram │ │ • Trace ID  │ │ • Past resolutions     ││
+│  └─────────────┘ └─────────────┘ │ • Timeline  │ └─────────────────────────┘│
+│                                  └─────────────┘                            │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │                          save_investigation                             ││
+│  │           Persist findings to knowledge base for future reference       ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ELASTICSEARCH LAYER                                │
+│  ┌─────────────────────────────┐   ┌─────────────────────────────────────┐  │
+│  │      logs-logsleuth         │   │     investigations-logsleuth        │  │
+│  │                             │   │                                     │  │
+│  │  • ECS-compliant schema     │   │  • Past investigation records       │  │
+│  │  • Distributed tracing      │   │  • Root cause findings              │  │
+│  │  • Error stack traces       │   │  • Remediation suggestions          │  │
+│  │  • Service metadata         │   │  • Timeline & evidence              │  │
+│  └─────────────────────────────┘   └─────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+## Why Elastic Agent Builder?
+
+LogSleuth leverages Elastic Agent Builder for several critical capabilities that would be difficult or impossible to build from scratch:
+
+### 1. **Native ES|QL Integration**
+Agent Builder tools can execute ES|QL queries directly, giving us:
+- Powerful aggregations for error frequency analysis
+- Efficient time-series pattern detection
+- Complex joins for trace correlation
+
+### 2. **Intelligent Tool Selection**
+The AI automatically decides which tools to use based on the incident description:
+- Recognizes when to search vs. analyze vs. correlate
+- Chains tools together based on intermediate results
+- Adapts investigation path based on what it finds
+
+### 3. **Built-in Context Management**
+Agent Builder handles:
+- Conversation memory across tool calls
+- Result summarization for long investigations
+- Token-efficient query planning
+
+### 4. **Production-Ready Deployment**
+Deploy the agent to Kibana with:
+- Role-based access control
+- Audit logging
+- Rate limiting
+- No infrastructure to manage
+
+### 5. **Seamless Elasticsearch Integration**
+Tools have direct access to:
+- Index patterns and mappings
+- Cluster-level aggregations
+- Cross-cluster search capabilities
+
+**The Result:** A 5-step investigation that would take an engineer 30-60 minutes is completed in under 5 minutes, with full traceability and evidence citations.
 
 ## Tech Stack
 
