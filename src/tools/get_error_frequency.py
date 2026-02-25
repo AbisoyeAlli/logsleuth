@@ -110,27 +110,27 @@ def get_error_frequency(
 
     start_time = datetime.utcnow() - time_delta
 
-    # Build filter clauses (use .keyword for text fields)
+    # Build filter clauses
     filter_clauses = [
         {"range": {"@timestamp": {"gte": start_time.isoformat()}}},
-        {"term": {"log.level.keyword": "error"}},
+        {"term": {"log.level": "error"}},
     ]
 
     if service_name:
-        filter_clauses.append({"term": {"service.name.keyword": service_name}})
+        filter_clauses.append({"term": {"service.name": service_name}})
     if error_type:
-        filter_clauses.append({"term": {"error.type.keyword": error_type}})
+        filter_clauses.append({"term": {"error.type": error_type}})
 
-    # Query 1: Error counts by service and type (use .keyword for text fields)
+    # Query 1: Error counts by service and type
     stats_query = {
         "query": {"bool": {"filter": filter_clauses}},
         "size": 0,
         "aggs": {
             "by_service": {
-                "terms": {"field": "service.name.keyword", "size": 20},
+                "terms": {"field": "service.name", "size": 20},
                 "aggs": {
                     "by_error_type": {
-                        "terms": {"field": "error.type.keyword", "size": 10}
+                        "terms": {"field": "error.type", "size": 10}
                     }
                 }
             },
@@ -152,7 +152,7 @@ def get_error_frequency(
                 },
                 "aggs": {
                     "by_service": {
-                        "terms": {"field": "service.name.keyword", "size": 10}
+                        "terms": {"field": "service.name", "size": 10}
                     }
                 }
             }

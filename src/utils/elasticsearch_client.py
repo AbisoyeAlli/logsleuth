@@ -268,7 +268,7 @@ def get_available_services(client: Elasticsearch) -> list:
                 "aggs": {
                     "services": {
                         "terms": {
-                            "field": "service.name.keyword",
+                            "field": "service.name",
                             "size": 50
                         }
                     }
@@ -311,7 +311,7 @@ def get_error_types(client: Elasticsearch, time_range_hours: int = 24) -> list:
                 "query": {
                     "bool": {
                         "filter": [
-                            {"term": {"log.level.keyword": "error"}},
+                            {"term": {"log.level": "error"}},
                             {"range": {"@timestamp": {"gte": f"now-{time_range_hours}h"}}}
                         ]
                     }
@@ -319,7 +319,7 @@ def get_error_types(client: Elasticsearch, time_range_hours: int = 24) -> list:
                 "aggs": {
                     "error_types": {
                         "terms": {
-                            "field": "error.type.keyword",
+                            "field": "error.type",
                             "size": 50
                         }
                     }

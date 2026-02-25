@@ -10,6 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import sys
+import html
 from pathlib import Path
 
 # Add project root to path
@@ -25,282 +26,262 @@ st.set_page_config(
 )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CUSTOM CSS - Dark Command Center Aesthetic
+# ENTERPRISE COMMAND CENTER CSS
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
     /* ══════════════════════════════════════════════════════════════════════════
-       TYPOGRAPHY - Import distinctive fonts
+       TYPOGRAPHY - Enterprise-grade fonts
+       Plus Jakarta Sans: Clean, professional headers
+       IBM Plex Mono: Technical precision for data
        ══════════════════════════════════════════════════════════════════════════ */
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
     /* ══════════════════════════════════════════════════════════════════════════
-       CSS VARIABLES - Dark Command Center Palette
+       CSS VARIABLES - Enterprise Command Center Palette
+       Deep navy foundation with emerald accents - Bloomberg/Datadog inspired
        ══════════════════════════════════════════════════════════════════════════ */
     :root {
-        --bg-primary: #0a0a0f;
-        --bg-secondary: #12121a;
-        --bg-tertiary: #1a1a24;
-        --bg-card: rgba(26, 26, 36, 0.7);
-        --bg-card-hover: rgba(32, 32, 45, 0.8);
-        --border-subtle: rgba(255, 255, 255, 0.06);
-        --border-glow: rgba(20, 184, 166, 0.3);
-        --text-primary: #f1f5f9;
-        --text-secondary: #94a3b8;
-        --text-muted: #64748b;
-        --accent-teal: #14b8a6;
-        --accent-teal-glow: rgba(20, 184, 166, 0.2);
-        --accent-amber: #f59e0b;
-        --accent-amber-glow: rgba(245, 158, 11, 0.2);
-        --accent-rose: #f43f5e;
-        --accent-rose-glow: rgba(244, 63, 94, 0.2);
-        --accent-purple: #a855f7;
-        --accent-blue: #3b82f6;
-        --gradient-primary: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-        --gradient-danger: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
-        --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        --gradient-card: linear-gradient(180deg, rgba(26,26,36,0.9) 0%, rgba(18,18,26,0.95) 100%);
+        /* Base colors - Deep navy foundation */
+        --bg-void: #030712;
+        --bg-primary: #0B1120;
+        --bg-secondary: #111827;
+        --bg-elevated: #1F2937;
+        --bg-surface: rgba(17, 24, 39, 0.95);
+
+        /* Border system */
+        --border-default: rgba(55, 65, 81, 0.5);
+        --border-subtle: rgba(55, 65, 81, 0.3);
+        --border-focus: #10B981;
+
+        /* Text hierarchy */
+        --text-primary: #F9FAFB;
+        --text-secondary: #9CA3AF;
+        --text-tertiary: #6B7280;
+        --text-muted: #4B5563;
+
+        /* Accent palette */
+        --accent-primary: #10B981;
+        --accent-primary-hover: #059669;
+        --accent-primary-subtle: rgba(16, 185, 129, 0.15);
+        --accent-primary-glow: rgba(16, 185, 129, 0.4);
+
+        /* Status colors */
+        --status-critical: #EF4444;
+        --status-critical-subtle: rgba(239, 68, 68, 0.15);
+        --status-warning: #F59E0B;
+        --status-warning-subtle: rgba(245, 158, 11, 0.15);
+        --status-success: #10B981;
+        --status-success-subtle: rgba(16, 185, 129, 0.15);
+        --status-info: #3B82F6;
+        --status-info-subtle: rgba(59, 130, 246, 0.15);
+
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       GLOBAL STYLES - Dark theme foundation
+       GLOBAL STYLES - Mission Control Foundation
        ══════════════════════════════════════════════════════════════════════════ */
     .stApp {
-        background: var(--bg-primary);
-        background-image:
-            radial-gradient(ellipse at 20% 0%, rgba(20, 184, 166, 0.08) 0%, transparent 50%),
-            radial-gradient(ellipse at 80% 100%, rgba(168, 85, 247, 0.05) 0%, transparent 50%),
-            linear-gradient(180deg, var(--bg-primary) 0%, #0d0d14 100%);
-        font-family: 'Outfit', sans-serif;
-    }
-
-    /* Subtle grid pattern overlay */
-    .stApp::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-image:
-            linear-gradient(rgba(20, 184, 166, 0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(20, 184, 166, 0.02) 1px, transparent 1px);
-        background-size: 50px 50px;
-        pointer-events: none;
-        z-index: 0;
+        background: var(--bg-void);
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       SIDEBAR STYLING
+       SIDEBAR - Control Panel
        ══════════════════════════════════════════════════════════════════════════ */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0d0d14 0%, #0a0a0f 100%);
-        border-right: 1px solid var(--border-subtle);
+        background: var(--bg-primary) !important;
+        border-right: 1px solid var(--border-default) !important;
+    }
+
+    [data-testid="stSidebar"] > div:first-child {
+        background: transparent !important;
     }
 
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
         color: var(--text-secondary);
     }
 
-    /* Sidebar title styling */
-    [data-testid="stSidebar"] h1 {
-        font-family: 'Outfit', sans-serif;
-        font-weight: 700;
-        font-size: 1.5rem;
-        background: linear-gradient(135deg, #14b8a6 0%, #22d3ee 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        letter-spacing: -0.02em;
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+        font-size: 0.875rem;
+        line-height: 1.5;
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       MAIN HEADER STYLES
-       ══════════════════════════════════════════════════════════════════════════ */
-    .main-header {
-        font-family: 'Outfit', sans-serif;
-        font-size: 2.75rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #14b8a6 0%, #22d3ee 50%, #a855f7 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0;
-        letter-spacing: -0.03em;
-        animation: shimmer 3s ease-in-out infinite;
-    }
-
-    @keyframes shimmer {
-        0%, 100% { filter: brightness(1); }
-        50% { filter: brightness(1.2); }
-    }
-
-    .sub-header {
-        font-family: 'Outfit', sans-serif;
-        font-size: 1.1rem;
-        color: var(--text-secondary);
-        margin-top: 4px;
-        font-weight: 400;
-        letter-spacing: 0.02em;
-    }
-
-    /* ══════════════════════════════════════════════════════════════════════════
-       TAB STYLING
+       TAB NAVIGATION - Command Tabs
        ══════════════════════════════════════════════════════════════════════════ */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 4px;
         background: var(--bg-secondary);
-        padding: 8px;
-        border-radius: 16px;
-        border: 1px solid var(--border-subtle);
+        padding: 6px;
+        border-radius: 10px;
+        border: 1px solid var(--border-default);
     }
 
     .stTabs [data-baseweb="tab"] {
-        font-family: 'Outfit', sans-serif;
-        font-weight: 500;
-        font-size: 0.95rem;
-        color: var(--text-secondary);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
         background: transparent;
-        border-radius: 10px;
-        padding: 10px 20px;
-        transition: all 0.2s ease;
+        border-radius: 6px;
+        padding: 10px 18px;
+        transition: all 0.15s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border: 1px solid transparent;
     }
 
     .stTabs [data-baseweb="tab"]:hover {
-        background: var(--bg-tertiary);
+        background: var(--bg-elevated);
         color: var(--text-primary);
     }
 
     .stTabs [aria-selected="true"] {
-        background: var(--gradient-primary) !important;
-        color: white !important;
-        box-shadow: 0 4px 15px var(--accent-teal-glow);
+        background: var(--accent-primary) !important;
+        color: var(--bg-void) !important;
+        font-weight: 700;
+        box-shadow: 0 2px 8px var(--accent-primary-glow);
     }
 
-    .stTabs [data-baseweb="tab-highlight"] {
-        display: none;
-    }
-
+    .stTabs [data-baseweb="tab-highlight"],
     .stTabs [data-baseweb="tab-border"] {
         display: none;
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       METRIC CARDS - Glassmorphism style
+       METRIC CARDS - Data Display Units
        ══════════════════════════════════════════════════════════════════════════ */
     [data-testid="stMetric"] {
-        background: var(--gradient-card);
-        border: 1px solid var(--border-subtle);
-        border-radius: 16px;
-        padding: 24px;
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-default);
+        border-radius: 8px;
+        padding: 20px 24px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    [data-testid="stMetric"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--accent-primary);
+        opacity: 0;
+        transition: opacity 0.2s ease;
     }
 
     [data-testid="stMetric"]:hover {
-        border-color: var(--border-glow);
-        box-shadow: 0 8px 32px var(--accent-teal-glow);
-        transform: translateY(-2px);
+        border-color: var(--accent-primary);
+        transform: translateY(-1px);
+    }
+
+    [data-testid="stMetric"]:hover::before {
+        opacity: 1;
     }
 
     [data-testid="stMetric"] label {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'IBM Plex Mono', monospace;
         font-weight: 500;
-        color: var(--text-secondary) !important;
-        font-size: 0.875rem;
+        color: var(--text-tertiary) !important;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
     }
 
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: 'IBM Plex Mono', monospace;
         font-weight: 600;
-        font-size: 2rem;
+        font-size: 1.75rem;
         color: var(--text-primary) !important;
+        letter-spacing: -0.02em;
     }
 
     [data-testid="stMetric"] [data-testid="stMetricDelta"] {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.875rem;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.75rem;
+        font-weight: 500;
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       BUTTONS - Neon glow effect
+       BUTTONS - Action Triggers
        ══════════════════════════════════════════════════════════════════════════ */
     .stButton > button {
-        font-family: 'Outfit', sans-serif;
-        font-weight: 600;
-        background: var(--gradient-primary);
-        color: white;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 700;
+        background: var(--accent-primary);
+        color: var(--bg-void);
         border: none;
-        border-radius: 12px;
-        padding: 12px 28px;
-        transition: all 0.3s ease;
+        border-radius: 6px;
+        padding: 12px 24px;
+        transition: all 0.15s ease;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-size: 0.875rem;
+        letter-spacing: 0.06em;
+        font-size: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .stButton > button:hover {
-        box-shadow: 0 6px 24px var(--accent-teal-glow), 0 0 40px var(--accent-teal-glow);
-        transform: translateY(-2px);
+        background: var(--accent-primary-hover);
+        box-shadow: 0 4px 12px var(--accent-primary-glow);
+        transform: translateY(-1px);
     }
 
     .stButton > button:active {
         transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       INPUT FIELDS - Dark style
+       INPUT FIELDS - Data Entry
        ══════════════════════════════════════════════════════════════════════════ */
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div > div {
-        font-family: 'JetBrains Mono', monospace;
+    .stTextInput > div > div > input {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.875rem;
         background: var(--bg-secondary) !important;
-        border: 1px solid var(--border-subtle) !important;
-        border-radius: 12px !important;
+        border: 1px solid var(--border-default) !important;
+        border-radius: 6px !important;
         color: var(--text-primary) !important;
-        padding: 12px 16px;
-        transition: all 0.2s ease;
+        padding: 12px 14px;
+        transition: all 0.15s ease;
     }
 
-    .stTextInput > div > div > input:focus,
-    .stSelectbox > div > div > div:focus {
-        border-color: var(--accent-teal) !important;
-        box-shadow: 0 0 0 3px var(--accent-teal-glow) !important;
+    .stTextInput > div > div > input:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 3px var(--accent-primary-subtle) !important;
+        outline: none;
     }
 
     .stTextInput > div > div > input::placeholder {
         color: var(--text-muted) !important;
+        font-style: normal;
     }
 
-    /* Selectbox specific fixes */
-    .stSelectbox > div > div {
-        min-height: 44px !important;
-    }
-
+    /* Selectbox styling */
     .stSelectbox [data-baseweb="select"] > div {
         background: var(--bg-secondary) !important;
-        border: 1px solid var(--border-subtle) !important;
-        border-radius: 12px !important;
-        min-height: 44px !important;
-        padding: 0 12px !important;
+        border: 1px solid var(--border-default) !important;
+        border-radius: 6px !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+        min-height: 42px !important;
     }
 
     .stSelectbox [data-baseweb="select"] span {
         color: var(--text-primary) !important;
-        font-family: 'JetBrains Mono', monospace !important;
+        font-family: 'IBM Plex Mono', monospace !important;
         font-size: 0.875rem !important;
-        white-space: nowrap !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
     }
 
-    /* Dropdown menu styling */
     [data-baseweb="popover"] {
         background: var(--bg-secondary) !important;
-        border: 1px solid var(--border-subtle) !important;
-        border-radius: 12px !important;
+        border: 1px solid var(--border-default) !important;
+        border-radius: 6px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
     }
 
     [data-baseweb="menu"] {
@@ -310,277 +291,463 @@ st.markdown("""
     [data-baseweb="menu"] li {
         background: var(--bg-secondary) !important;
         color: var(--text-primary) !important;
-        font-family: 'JetBrains Mono', monospace !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+        font-size: 0.875rem;
+        padding: 10px 14px !important;
     }
 
     [data-baseweb="menu"] li:hover {
-        background: var(--bg-tertiary) !important;
-    }
-
-    /* Sidebar selectbox - ensure full width */
-    [data-testid="stSidebar"] .stSelectbox {
-        width: 100% !important;
-    }
-
-    [data-testid="stSidebar"] .stSelectbox > div {
-        width: 100% !important;
+        background: var(--bg-elevated) !important;
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       EXPANDER - Card style
-       ══════════════════════════════════════════════════════════════════════════ */
-    .streamlit-expanderHeader {
-        font-family: 'Outfit', sans-serif;
-        font-weight: 500;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-subtle);
-        border-radius: 12px;
-        color: var(--text-primary);
-        transition: all 0.2s ease;
-    }
-
-    .streamlit-expanderHeader:hover {
-        border-color: var(--accent-teal);
-        background: var(--bg-tertiary);
-    }
-
-    .streamlit-expanderContent {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-subtle);
-        border-top: none;
-        border-radius: 0 0 12px 12px;
-    }
-
-    /* ══════════════════════════════════════════════════════════════════════════
-       DATAFRAME STYLING
+       DATAFRAME - Data Grid
        ══════════════════════════════════════════════════════════════════════════ */
     [data-testid="stDataFrame"] {
-        border-radius: 16px;
+        border-radius: 8px;
         overflow: hidden;
-        border: 1px solid var(--border-subtle);
+        border: 1px solid var(--border-default);
     }
 
     [data-testid="stDataFrame"] table {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.875rem;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.8rem;
     }
 
     [data-testid="stDataFrame"] th {
-        background: var(--bg-tertiary) !important;
-        color: var(--text-secondary) !important;
+        background: var(--bg-elevated) !important;
+        color: var(--text-tertiary) !important;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-size: 0.75rem;
+        letter-spacing: 0.06em;
+        font-size: 0.7rem;
+        padding: 12px 16px !important;
+        border-bottom: 2px solid var(--accent-primary) !important;
     }
 
     [data-testid="stDataFrame"] td {
         background: var(--bg-secondary) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-subtle) !important;
+        padding: 10px 16px !important;
+    }
+
+    [data-testid="stDataFrame"] tr:hover td {
+        background: var(--bg-elevated) !important;
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       ALERT BOXES
+       EXPANDER - Collapsible Sections
+       ══════════════════════════════════════════════════════════════════════════ */
+    .streamlit-expanderHeader {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        background: var(--bg-secondary) !important;
+        border: 1px solid var(--border-default) !important;
+        border-radius: 6px !important;
+        color: var(--text-primary) !important;
+        padding: 14px 18px !important;
+        transition: all 0.15s ease;
+    }
+
+    .streamlit-expanderHeader:hover {
+        border-color: var(--accent-primary) !important;
+        background: var(--bg-elevated) !important;
+    }
+
+    .streamlit-expanderContent {
+        background: var(--bg-secondary) !important;
+        border: 1px solid var(--border-default) !important;
+        border-top: none !important;
+        border-radius: 0 0 6px 6px !important;
+        padding: 16px !important;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       ALERTS - Status Messages
        ══════════════════════════════════════════════════════════════════════════ */
     .stSuccess {
-        background: linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
-        border: 1px solid rgba(20, 184, 166, 0.3);
-        border-radius: 12px;
-        color: #5eead4;
+        background: var(--status-success-subtle) !important;
+        border: 1px solid var(--status-success) !important;
+        border-radius: 6px;
+        border-left: 4px solid var(--status-success) !important;
+    }
+
+    .stSuccess p {
+        color: var(--status-success) !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 500;
     }
 
     .stError {
-        background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
-        border: 1px solid rgba(244, 63, 94, 0.3);
-        border-radius: 12px;
-        color: #fda4af;
+        background: var(--status-critical-subtle) !important;
+        border: 1px solid var(--status-critical) !important;
+        border-radius: 6px;
+        border-left: 4px solid var(--status-critical) !important;
+    }
+
+    .stError p {
+        color: var(--status-critical) !important;
     }
 
     .stWarning {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(234, 179, 8, 0.1) 100%);
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        border-radius: 12px;
-        color: #fde047;
+        background: var(--status-warning-subtle) !important;
+        border: 1px solid var(--status-warning) !important;
+        border-radius: 6px;
+        border-left: 4px solid var(--status-warning) !important;
+    }
+
+    .stWarning p {
+        color: var(--status-warning) !important;
     }
 
     .stInfo {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        border-radius: 12px;
-        color: #93c5fd;
+        background: var(--status-info-subtle) !important;
+        border: 1px solid var(--status-info) !important;
+        border-radius: 6px;
+        border-left: 4px solid var(--status-info) !important;
+    }
+
+    .stInfo p {
+        color: var(--status-info) !important;
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
-       DIVIDER STYLING
+       SPINNER - Loading State
        ══════════════════════════════════════════════════════════════════════════ */
-    hr {
-        border: none;
-        height: 1px;
-        background: linear-gradient(90deg, transparent 0%, var(--border-subtle) 20%, var(--border-subtle) 80%, transparent 100%);
-        margin: 32px 0;
+    .stSpinner > div {
+        border-top-color: var(--accent-primary) !important;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       CUSTOM LOADER - Enterprise Search Processing
+       ══════════════════════════════════════════════════════════════════════════ */
+    .logsleuth-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-default);
+        border-radius: 12px;
+        margin: 20px 0;
+    }
+
+    .loader-spinner {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 24px;
+    }
+
+    .loader-bar {
+        width: 4px;
+        height: 32px;
+        background: var(--accent-primary);
+        border-radius: 2px;
+        animation: loader-pulse 1s ease-in-out infinite;
+    }
+
+    .loader-bar:nth-child(1) { animation-delay: 0s; }
+    .loader-bar:nth-child(2) { animation-delay: 0.1s; }
+    .loader-bar:nth-child(3) { animation-delay: 0.2s; }
+    .loader-bar:nth-child(4) { animation-delay: 0.3s; }
+    .loader-bar:nth-child(5) { animation-delay: 0.4s; }
+
+    @keyframes loader-pulse {
+        0%, 100% {
+            transform: scaleY(0.4);
+            opacity: 0.4;
+        }
+        50% {
+            transform: scaleY(1);
+            opacity: 1;
+        }
+    }
+
+    .loader-status {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .loader-substatus {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        letter-spacing: 0.02em;
+    }
+
+    .loader-progress {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .loader-step {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: var(--bg-elevated);
+        border-radius: 4px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .loader-step.active {
+        background: var(--accent-primary-subtle);
+        color: var(--accent-primary);
+        border: 1px solid var(--accent-primary);
+    }
+
+    .loader-step.complete {
+        background: var(--status-success-subtle);
+        color: var(--status-success);
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
        CUSTOM COMPONENT CLASSES
        ══════════════════════════════════════════════════════════════════════════ */
+
+    /* Status Badge */
     .status-badge {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
-        font-weight: 500;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 4px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
     }
 
     .status-online {
-        background: linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%);
-        border: 1px solid rgba(20, 184, 166, 0.4);
-        color: #5eead4;
+        background: var(--status-success-subtle);
+        border: 1px solid var(--status-success);
+        color: var(--status-success);
     }
 
     .status-offline {
-        background: linear-gradient(135deg, rgba(244, 63, 94, 0.2) 0%, rgba(239, 68, 68, 0.15) 100%);
-        border: 1px solid rgba(244, 63, 94, 0.4);
-        color: #fda4af;
+        background: var(--status-critical-subtle);
+        border: 1px solid var(--status-critical);
+        color: var(--status-critical);
     }
 
+    /* Pulse indicator */
     .pulse-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        animation: pulse 2s ease-in-out infinite;
+        animation: pulse-glow 2s ease-in-out infinite;
     }
 
     .pulse-dot.online {
-        background: #14b8a6;
-        box-shadow: 0 0 10px #14b8a6;
+        background: var(--status-success);
     }
 
     .pulse-dot.offline {
-        background: #f43f5e;
-        box-shadow: 0 0 10px #f43f5e;
+        background: var(--status-critical);
     }
 
-    @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.6; transform: scale(1.1); }
+    @keyframes pulse-glow {
+        0%, 100% {
+            opacity: 1;
+            box-shadow: 0 0 4px currentColor;
+        }
+        50% {
+            opacity: 0.6;
+            box-shadow: 0 0 8px currentColor, 0 0 12px currentColor;
+        }
     }
 
+    /* Section Headers */
     .section-header {
-        font-family: 'Outfit', sans-serif;
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 20px;
-        padding-bottom: 12px;
-        border-bottom: 2px solid var(--accent-teal);
-        display: inline-block;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-default);
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
+    .section-header::before {
+        content: '';
+        width: 3px;
+        height: 16px;
+        background: var(--accent-primary);
+        border-radius: 2px;
+    }
+
+    /* Card Container */
     .card-container {
-        background: var(--gradient-card);
-        border: 1px solid var(--border-subtle);
-        border-radius: 20px;
-        padding: 28px;
-        backdrop-filter: blur(10px);
-        margin-bottom: 24px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-default);
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 20px;
+        position: relative;
     }
 
-    .footer-text {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-align: center;
-        padding: 24px 0;
-        border-top: 1px solid var(--border-subtle);
-        margin-top: 48px;
+    .card-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--accent-primary);
+        border-radius: 8px 8px 0 0;
     }
 
+    /* Logo Container */
     .logo-container {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 16px;
-        background: linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
-        border-radius: 16px;
-        border: 1px solid var(--border-subtle);
+        gap: 14px;
+        padding: 18px;
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        border: 1px solid var(--border-default);
         margin-bottom: 24px;
     }
 
     .logo-icon {
-        font-size: 2rem;
+        font-size: 1.8rem;
+        filter: drop-shadow(0 0 8px var(--accent-primary-glow));
     }
 
+    /* Investigation Result */
     .investigation-result {
-        background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(168, 85, 247, 0.04) 100%);
-        border: 1px solid rgba(20, 184, 166, 0.2);
-        border-radius: 16px;
-        padding: 24px;
-        margin-top: 20px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--status-success);
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 16px;
+        position: relative;
     }
 
-    /* Scrollbar styling */
+    .investigation-result::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--status-success);
+        border-radius: 8px 8px 0 0;
+    }
+
+    /* Footer */
+    .footer-text {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 20px 0;
+        border-top: 1px solid var(--border-subtle);
+        margin-top: 40px;
+        letter-spacing: 0.02em;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       SCROLLBAR - Minimal Style
+       ══════════════════════════════════════════════════════════════════════════ */
     ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
     }
 
     ::-webkit-scrollbar-track {
-        background: var(--bg-secondary);
+        background: var(--bg-primary);
     }
 
     ::-webkit-scrollbar-thumb {
-        background: var(--bg-tertiary);
-        border-radius: 4px;
+        background: var(--border-default);
+        border-radius: 3px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
         background: var(--text-muted);
     }
 
-    /* Hide Streamlit branding but keep sidebar toggle */
+    /* ══════════════════════════════════════════════════════════════════════════
+       STREAMLIT OVERRIDES
+       ══════════════════════════════════════════════════════════════════════════ */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 
-    /* Style the sidebar collapse/expand button */
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="collapsedControl"] {
-        visibility: visible !important;
-        opacity: 1 !important;
+    [data-testid="stHeader"] {
+        background: transparent !important;
     }
 
+    /* Sidebar toggle */
     [data-testid="stSidebarCollapseButton"] button,
     [data-testid="collapsedControl"] button {
         background: var(--bg-secondary) !important;
-        border: 1px solid var(--border-subtle) !important;
-        border-radius: 8px !important;
+        border: 1px solid var(--border-default) !important;
+        border-radius: 4px !important;
         color: var(--text-secondary) !important;
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
     }
 
     [data-testid="stSidebarCollapseButton"] button:hover,
     [data-testid="collapsedControl"] button:hover {
-        background: var(--bg-tertiary) !important;
-        border-color: var(--accent-teal) !important;
-        color: var(--accent-teal) !important;
+        background: var(--bg-elevated) !important;
+        border-color: var(--accent-primary) !important;
+        color: var(--accent-primary) !important;
     }
 
-    /* Style the collapsed sidebar expand button */
-    [data-testid="collapsedControl"] {
-        position: fixed;
-        top: 14px;
-        left: 14px;
-        z-index: 1000;
+    /* Checkbox styling */
+    .stCheckbox label span {
+        color: var(--text-secondary) !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 0.875rem;
     }
 
-    /* Header - hide the decoration but keep functional elements */
-    [data-testid="stHeader"] {
-        background: transparent !important;
+    /* Divider */
+    hr {
+        border: none;
+        height: 1px;
+        background: var(--border-default);
+        margin: 24px 0;
+    }
+
+    /* Main header styles */
+    .main-header {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 2rem;
+        font-weight: 800;
+        background: var(--accent-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0;
+        letter-spacing: -0.03em;
+    }
+
+    .sub-header {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 0.95rem;
+        color: var(--text-tertiary);
+        margin-top: 6px;
+        font-weight: 400;
+        letter-spacing: 0.01em;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -606,6 +773,42 @@ def check_connection():
         return True, info.get('cluster_name', 'Connected')
     except Exception as e:
         return False, str(e)
+
+
+def render_loader(title: str, subtitle: str = "", steps: list = None):
+    """
+    Render a custom enterprise-style loader.
+
+    Args:
+        title: Main loading message (e.g., "Searching logs...")
+        subtitle: Secondary status text
+        steps: Optional list of step dicts with 'name' and 'status' (pending/active/complete)
+    """
+    steps_html = ""
+    if steps:
+        step_items = []
+        for step in steps:
+            status_class = step.get("status", "pending")
+            icon = "✓" if status_class == "complete" else "◦" if status_class == "pending" else "●"
+            step_items.append(f'<div class="loader-step {status_class}">{icon} {step["name"]}</div>')
+        steps_html = f'<div class="loader-progress">{"".join(step_items)}</div>'
+
+    subtitle_html = f'<div class="loader-substatus">{subtitle}</div>' if subtitle else ""
+
+    return st.markdown(f"""
+    <div class="logsleuth-loader">
+        <div class="loader-spinner">
+            <div class="loader-bar"></div>
+            <div class="loader-bar"></div>
+            <div class="loader-bar"></div>
+            <div class="loader-bar"></div>
+            <div class="loader-bar"></div>
+        </div>
+        <div class="loader-status">{title}</div>
+        {subtitle_html}
+        {steps_html}
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def get_error_stats(time_range: str = "2h"):
@@ -655,7 +858,7 @@ def get_services_list():
             index=LOG_INDEX,
             body={
                 "size": 0,
-                "aggs": {"services": {"terms": {"field": "service.name.keyword", "size": 20}}}
+                "aggs": {"services": {"terms": {"field": "service.name", "size": 20}}}
             }
         )
         services = ["All Services"] + [b["key"] for b in result["aggregations"]["services"]["buckets"]]
@@ -748,66 +951,32 @@ def run_investigation(description: str, time_range: str, progress_callback=None)
 
 
 def render_investigation_stepper(current_step: str = None, completed_steps: list = None):
-    """Render the 5-step investigation progress stepper."""
+    """Render the 5-step investigation progress stepper using Streamlit columns."""
     steps = [
-        {"id": "understand", "label": "Understand", "icon": "🎯", "desc": "Parse incident"},
-        {"id": "search", "label": "Search", "icon": "🔍", "desc": "Find errors"},
-        {"id": "analyze", "label": "Analyze", "icon": "📊", "desc": "Detect patterns"},
-        {"id": "correlate", "label": "Correlate", "icon": "🔗", "desc": "Trace requests"},
-        {"id": "synthesize", "label": "Synthesize", "icon": "💡", "desc": "Root cause"},
+        {"id": "understand", "label": "Understand", "icon": "🎯"},
+        {"id": "search", "label": "Search", "icon": "🔍"},
+        {"id": "analyze", "label": "Analyze", "icon": "📊"},
+        {"id": "correlate", "label": "Correlate", "icon": "🔗"},
+        {"id": "synthesize", "label": "Synthesize", "icon": "💡"},
     ]
 
     completed_ids = [s["step"] for s in (completed_steps or [])]
 
-    step_html = '<div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0; padding: 20px; background: rgba(20, 184, 166, 0.05); border-radius: 16px; border: 1px solid rgba(20, 184, 166, 0.1);">'
-
+    cols = st.columns(5)
     for i, step in enumerate(steps):
         is_completed = step["id"] in completed_ids
         is_current = step["id"] == current_step
-        is_pending = not is_completed and not is_current
 
-        if is_completed:
-            bg_color = "rgba(20, 184, 166, 0.2)"
-            border_color = "#14b8a6"
-            text_color = "#5eead4"
-            icon_opacity = "1"
-        elif is_current:
-            bg_color = "rgba(245, 158, 11, 0.2)"
-            border_color = "#f59e0b"
-            text_color = "#fde047"
-            icon_opacity = "1"
-        else:
-            bg_color = "rgba(255, 255, 255, 0.03)"
-            border_color = "rgba(255, 255, 255, 0.1)"
-            text_color = "#64748b"
-            icon_opacity = "0.5"
-
-        step_html += f'''
-        <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-            <div style="width: 48px; height: 48px; border-radius: 50%; background: {bg_color};
-                        border: 2px solid {border_color}; display: flex; align-items: center;
-                        justify-content: center; font-size: 1.2rem; opacity: {icon_opacity};
-                        transition: all 0.3s ease;">
-                {"✓" if is_completed else step["icon"]}
-            </div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 600;
-                        color: {text_color}; margin-top: 8px; text-transform: uppercase;
-                        letter-spacing: 0.05em;">{step["label"]}</div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
-                        color: #64748b; margin-top: 2px;">{step["desc"]}</div>
-        </div>
-        '''
-
-        # Add connector line between steps
-        if i < len(steps) - 1:
-            line_color = "#14b8a6" if is_completed else "rgba(255, 255, 255, 0.1)"
-            step_html += f'''
-            <div style="flex: 0.5; height: 2px; background: {line_color};
-                        margin: 0 -10px; margin-bottom: 30px;"></div>
-            '''
-
-    step_html += '</div>'
-    return step_html
+        with cols[i]:
+            if is_completed:
+                st.markdown(f"### ✅")
+                st.caption(f"**{step['label']}**")
+            elif is_current:
+                st.markdown(f"### ⏳")
+                st.caption(f"**{step['label']}**")
+            else:
+                st.markdown(f"### {step['icon']}")
+                st.caption(step['label'])
 
 
 def render_sankey_diagram(service_flow: list, title: str = "Request Flow"):
@@ -828,16 +997,16 @@ def render_sankey_diagram(service_flow: list, title: str = "Request Flow"):
     target_indices = [services.index(f["target"]) for f in service_flow]
     values = [f["value"] for f in service_flow]
 
-    # Color links based on error status
+    # Color links based on error status - Enterprise palette
     link_colors = [
-        "rgba(244, 63, 94, 0.6)" if f.get("has_error") else "rgba(20, 184, 166, 0.4)"
+        "rgba(239, 68, 68, 0.6)" if f.get("has_error") else "rgba(16, 185, 129, 0.4)"
         for f in service_flow
     ]
 
     # Node colors - highlight error services
     error_services = set(f["target"] for f in service_flow if f.get("has_error"))
     node_colors = [
-        "#f43f5e" if svc in error_services else "#14b8a6"
+        "#EF4444" if svc in error_services else "#10B981"
         for svc in services
     ]
 
@@ -863,14 +1032,14 @@ def render_sankey_diagram(service_flow: list, title: str = "Request Flow"):
     fig.update_layout(
         title=dict(
             text=title,
-            font=dict(family='Outfit, sans-serif', size=14, color='#94a3b8'),
+            font=dict(family='Plus Jakarta Sans, sans-serif', size=13, color='#9CA3AF'),
             x=0.5
         ),
-        font=dict(family='JetBrains Mono, monospace', size=11, color='#f1f5f9'),
+        font=dict(family='IBM Plex Mono, monospace', size=11, color='#F9FAFB'),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        height=300,
-        margin=dict(l=20, r=20, t=50, b=20),
+        height=280,
+        margin=dict(l=20, r=20, t=45, b=20),
     )
 
     return fig
@@ -878,19 +1047,22 @@ def render_sankey_diagram(service_flow: list, title: str = "Request Flow"):
 
 # Sidebar
 with st.sidebar:
-    # Logo and branding
+    # Enterprise Logo and branding
     st.markdown("""
     <div class="logo-container">
-        <span class="logo-icon">🔍</span>
+        <div style="width: 42px; height: 42px; background: #10B981;
+                    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+            <span style="font-size: 1.4rem; filter: brightness(10);">🔍</span>
+        </div>
         <div>
-            <div style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.4rem;
-                        background: linear-gradient(135deg, #14b8a6 0%, #22d3ee 100%);
-                        -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.25rem;
+                        color: #F9FAFB; letter-spacing: -0.02em;">
                 LogSleuth
             </div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
-                        text-transform: uppercase; letter-spacing: 0.1em;">
-                Incident Investigator
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: #6B7280;
+                        text-transform: uppercase; letter-spacing: 0.12em; margin-top: 2px;">
+                Enterprise • v2.0
             </div>
         </div>
     </div>
@@ -900,27 +1072,30 @@ with st.sidebar:
     connected, status = check_connection()
 
     st.markdown("""
-    <div style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; color: #64748b;
-                text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+    <div class="section-header" style="margin-top: 8px; font-size: 0.7rem;">
         System Status
     </div>
     """, unsafe_allow_html=True)
 
     if connected:
+        escaped_status = html.escape(status)
         st.markdown(f"""
         <div class="status-badge status-online">
             <span class="pulse-dot online"></span>
-            Connected
+            Operational
         </div>
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #94a3b8; margin-top: 8px;">
-            Cluster: {status}
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #9CA3AF;
+                    margin-top: 10px; padding: 10px; background: rgba(17, 24, 39, 0.6);
+                    border-radius: 4px; border: 1px solid rgba(55, 65, 81, 0.3);">
+            <div style="color: #6B7280; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">Cluster</div>
+            <div style="color: #F9FAFB;">{escaped_status}</div>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
         <div class="status-badge status-offline">
             <span class="pulse-dot offline"></span>
-            Disconnected
+            Offline
         </div>
         """, unsafe_allow_html=True)
         st.caption(f"⚠️ {status}")
@@ -930,9 +1105,8 @@ with st.sidebar:
 
     # Time range selector with custom label
     st.markdown("""
-    <div style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; color: #64748b;
-                text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
-        Time Window
+    <div class="section-header" style="font-size: 0.7rem;">
+        Analysis Window
     </div>
     """, unsafe_allow_html=True)
 
@@ -945,48 +1119,64 @@ with st.sidebar:
 
     st.divider()
 
-    # Auto refresh toggle
-    auto_refresh = st.checkbox("⟳ Auto-refresh (30s)", value=False)
+    # Quick actions section
+    st.markdown("""
+    <div class="section-header" style="font-size: 0.7rem;">
+        Quick Actions
+    </div>
+    """, unsafe_allow_html=True)
+
+    auto_refresh = st.checkbox("Auto-refresh (30s)", value=False)
     if auto_refresh:
         st.rerun()
 
     # Add spacing before footer
-    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 60px;'></div>", unsafe_allow_html=True)
 
-    # Footer with gradient accent (using relative positioning)
+    # Enterprise footer
     st.markdown("""
-    <div style="margin-top: auto; padding-top: 20px;">
-        <div style="height: 2px; background: linear-gradient(90deg, #14b8a6 0%, #a855f7 100%);
-                    border-radius: 1px; margin-bottom: 16px;"></div>
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #64748b; text-align: center;">
-            Elasticsearch Agent Builder<br>Hackathon 2026
+    <div style="padding: 16px; background: rgba(17, 24, 39, 0.6); border-radius: 6px;
+                border: 1px solid rgba(55, 65, 81, 0.3); margin-top: auto;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <div style="width: 6px; height: 6px; background: #10B981; border-radius: 50%;
+                        box-shadow: 0 0 8px #10B981;"></div>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: #9CA3AF;
+                         text-transform: uppercase; letter-spacing: 0.08em;">Elastic Agent Builder</span>
+        </div>
+        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; color: #6B7280;">
+            Hackathon 2026 Edition
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 
-# Main content
+# Main content - Enterprise Header
 st.markdown("""
-<div style="margin-bottom: 32px;">
-    <p class="main-header">🔍 LogSleuth</p>
-    <p class="sub-header">AI-Powered Incident Investigation & Root Cause Analysis</p>
+<div style="margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid rgba(55, 65, 81, 0.3);">
+    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 8px;">
+        <div style="width: 4px; height: 28px; background: #10B981;
+                    border-radius: 4px;"></div>
+        <h1 class="main-header" style="margin: 0;">LogSleuth</h1>
+    </div>
+    <p class="sub-header" style="margin-left: 22px;">Enterprise Incident Investigation Platform</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "🔎 Investigate", "📜 Log Search", "📚 History"])
+# Tabs - Enterprise Navigation
+tab1, tab2, tab3, tab4 = st.tabs(["OVERVIEW", "INVESTIGATE", "LOG SEARCH", "HISTORY"])
 
 # Tab 1: Dashboard
 with tab1:
     if not connected:
         st.markdown("""
         <div class="card-container" style="text-align: center; padding: 60px;">
-            <div style="font-size: 3rem; margin-bottom: 16px;">⚡</div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; color: #f1f5f9; margin-bottom: 8px;">
+            <div style="font-size: 2.5rem; margin-bottom: 20px; opacity: 0.8;">⚡</div>
+            <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.1rem; color: #F9FAFB;
+                        margin-bottom: 8px; font-weight: 600;">
                 Connect to Elasticsearch
             </div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #64748b;">
-                Configure your connection to view the dashboard
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: #6B7280;">
+                Configure your connection to view system metrics
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1052,7 +1242,7 @@ with tab1:
             }
 
             with col1:
-                st.markdown('<div class="section-header">Errors Over Time</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-header">Error Trend</div>', unsafe_allow_html=True)
                 if stats.get("histogram"):
                     df = pd.DataFrame(stats["histogram"])
                     df["timestamp"] = pd.to_datetime(df["timestamp"])
@@ -1063,19 +1253,19 @@ with tab1:
                         y=df["total_errors"],
                         mode='lines',
                         fill='tozeroy',
-                        line=dict(color='#14b8a6', width=2),
-                        fillcolor='rgba(20, 184, 166, 0.2)',
+                        line=dict(color='#10B981', width=2),
+                        fillcolor='rgba(16, 185, 129, 0.15)',
                         name='Errors'
                     ))
                     fig.update_layout(
-                        height=320,
-                        margin=dict(l=20, r=20, t=40, b=20),
+                        height=300,
+                        margin=dict(l=20, r=20, t=35, b=20),
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(family='JetBrains Mono, monospace', color='#94a3b8'),
-                        title=dict(text=f"Last {time_range}", font=dict(family='Outfit, sans-serif', color='#64748b', size=12)),
-                        xaxis=dict(gridcolor='rgba(255,255,255,0.06)', linecolor='rgba(255,255,255,0.1)'),
-                        yaxis=dict(gridcolor='rgba(255,255,255,0.06)', linecolor='rgba(255,255,255,0.1)'),
+                        font=dict(family='IBM Plex Mono, monospace', size=10, color='#9CA3AF'),
+                        title=dict(text=f"Last {time_range}", font=dict(family='Plus Jakarta Sans, sans-serif', color='#6B7280', size=11)),
+                        xaxis=dict(gridcolor='rgba(55, 65, 81, 0.3)', linecolor='rgba(55, 65, 81, 0.5)', tickfont=dict(size=9)),
+                        yaxis=dict(gridcolor='rgba(55, 65, 81, 0.3)', linecolor='rgba(55, 65, 81, 0.5)', tickfont=dict(size=9)),
                         showlegend=False
                     )
                     st.plotly_chart(fig, use_container_width=True)
@@ -1083,37 +1273,42 @@ with tab1:
                     st.info("No error data in selected time range")
 
             with col2:
-                st.markdown('<div class="section-header">Errors by Service</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-header">Service Distribution</div>', unsafe_allow_html=True)
                 if stats.get("service_breakdown"):
                     df = pd.DataFrame(stats["service_breakdown"])
 
-                    # Custom color palette
-                    colors = ['#14b8a6', '#f59e0b', '#f43f5e', '#a855f7', '#3b82f6', '#22d3ee', '#84cc16']
+                    # Enterprise color palette - professional and distinct
+                    colors = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6', '#06B6D4', '#84CC16']
 
                     fig = go.Figure(data=[go.Pie(
                         labels=df["service"],
                         values=df["error_count"],
-                        hole=0.55,
-                        marker=dict(colors=colors[:len(df)], line=dict(color='#0a0a0f', width=2)),
-                        textfont=dict(family='JetBrains Mono, monospace', color='#f1f5f9', size=11),
+                        hole=0.6,
+                        marker=dict(colors=colors[:len(df)], line=dict(color='#0B1120', width=2)),
+                        textfont=dict(family='IBM Plex Mono, monospace', color='#F9FAFB', size=10),
                         textinfo='percent',
                         hovertemplate='<b>%{label}</b><br>Errors: %{value}<br>%{percent}<extra></extra>'
                     )])
                     fig.update_layout(
-                        height=320,
-                        margin=dict(l=20, r=20, t=40, b=20),
+                        height=300,
+                        margin=dict(l=20, r=20, t=35, b=20),
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(family='Outfit, sans-serif', color='#94a3b8'),
+                        font=dict(family='Plus Jakarta Sans, sans-serif', color='#9CA3AF'),
                         showlegend=True,
                         legend=dict(
-                            font=dict(family='JetBrains Mono, monospace', size=10, color='#94a3b8'),
-                            bgcolor='rgba(0,0,0,0)'
+                            font=dict(family='IBM Plex Mono, monospace', size=9, color='#9CA3AF'),
+                            bgcolor='rgba(0,0,0,0)',
+                            orientation='h',
+                            yanchor='bottom',
+                            y=-0.15,
+                            xanchor='center',
+                            x=0.5
                         ),
                         annotations=[dict(
-                            text=f'{int(df["error_count"].sum()):,}',
+                            text=f'<b>{int(df["error_count"].sum()):,}</b>',
                             x=0.5, y=0.5,
-                            font=dict(family='JetBrains Mono, monospace', size=24, color='#f1f5f9'),
+                            font=dict(family='IBM Plex Mono, monospace', size=22, color='#F9FAFB'),
                             showarrow=False
                         )]
                     )
@@ -1140,10 +1335,10 @@ with tab2:
         st.markdown("""
         <div class="card-container" style="text-align: center; padding: 60px;">
             <div style="font-size: 3rem; margin-bottom: 16px;">🔐</div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; color: #f1f5f9; margin-bottom: 8px;">
+            <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.25rem; color: #F9FAFB; margin-bottom: 8px;">
                 Connect to Elasticsearch
             </div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #64748b;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.875rem; color: #6B7280;">
                 Configure your connection to run investigations
             </div>
         </div>
@@ -1151,7 +1346,7 @@ with tab2:
     else:
         # Investigation input with styled container
         st.markdown("""
-        <div style="font-family: 'Outfit', sans-serif; font-size: 0.875rem; color: #94a3b8; margin-bottom: 12px;">
+        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; color: #9CA3AF; margin-bottom: 12px;">
             Describe the incident you want to investigate. Our AI will analyze logs, traces, and metrics to identify root causes.
         </div>
         """, unsafe_allow_html=True)
@@ -1164,46 +1359,37 @@ with tab2:
                 label_visibility="collapsed"
             )
         with col2:
-            investigate_btn = st.button("🔍 Investigate", type="primary", use_container_width=True)
+            investigate_btn = st.button("🔍 Investigate", type="primary", width="stretch")
 
         if investigate_btn and incident_desc:
-            # Show progress stepper placeholder
-            stepper_placeholder = st.empty()
-            status_placeholder = st.empty()
+            # Create placeholder for loader
+            loader_placeholder = st.empty()
 
-            # Track current step for animation
-            def update_progress(step, message):
-                stepper_placeholder.markdown(
-                    render_investigation_stepper(current_step=step, completed_steps=[]),
-                    unsafe_allow_html=True
+            # Show custom loader
+            with loader_placeholder.container():
+                render_loader(
+                    "Running investigation...",
+                    "Analyzing logs, traces, and metrics",
+                    [
+                        {"name": "Understand", "status": "active"},
+                        {"name": "Search", "status": "pending"},
+                        {"name": "Analyze", "status": "pending"},
+                        {"name": "Correlate", "status": "pending"},
+                    ]
                 )
-                status_placeholder.markdown(f"""
-                <div style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #94a3b8;">
-                    {message}
-                </div>
-                """, unsafe_allow_html=True)
 
-            with st.spinner("🔍 Running investigation..."):
-                results = run_investigation(incident_desc, time_range)
+            # Run investigation
+            results = run_investigation(incident_desc, time_range)
 
-            # Show completed stepper
+            # Clear loader
+            loader_placeholder.empty()
+
+            # Show completed stepper and results
             if results:
-                stepper_placeholder.markdown(
-                    render_investigation_stepper(completed_steps=results.get("steps_completed", [])),
-                    unsafe_allow_html=True
-                )
-                status_placeholder.empty()
+                # Show progress stepper
+                render_investigation_stepper(completed_steps=results.get("steps_completed", []))
 
-                st.markdown("""
-                <div class="investigation-result">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-                        <span style="font-size: 1.5rem;">✅</span>
-                        <span style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 600; color: #5eead4;">
-                            Investigation Complete
-                        </span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.success("✅ Investigation Complete")
 
                 # Summary cards
                 col1, col2, col3 = st.columns(3)
@@ -1220,8 +1406,8 @@ with tab2:
                 if results.get("service_flow"):
                     st.markdown('<div class="section-header">Service Request Flow</div>', unsafe_allow_html=True)
                     st.markdown("""
-                    <div style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">
-                        Visualizing how the request flowed between services. <span style="color: #f43f5e;">Red</span> indicates error propagation.
+                    <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; color: #6B7280; margin-bottom: 12px;">
+                        Visualizing how the request flowed between services. <span style="color: #EF4444;">Red</span> indicates error propagation.
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -1247,18 +1433,8 @@ with tab2:
 
                     df = pd.DataFrame(timeline_data)
 
-                    # Style the timeline dataframe
-                    def style_timeline_level(val):
-                        colors = {
-                            "ERROR": "color: #f43f5e; font-weight: 600;",
-                            "WARN": "color: #f59e0b; font-weight: 600;",
-                            "INFO": "color: #3b82f6;",
-                            "DEBUG": "color: #64748b;"
-                        }
-                        return colors.get(val, "")
-
-                    styled_df = df.style.applymap(style_timeline_level, subset=["Level"])
-                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                    # Display the timeline dataframe
+                    st.dataframe(df, use_container_width=True, hide_index=True)
 
                 st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
 
@@ -1269,48 +1445,53 @@ with tab2:
                 affected = ", ".join(results["services"][:5]) or "None identified"
                 total_errors = int(results["errors"]["total_errors"]) if results["errors"] else 0
 
+                # Escape user-provided and database content for safe HTML rendering
+                escaped_incident = html.escape(incident_desc)
+                escaped_root_cause = html.escape(root_cause)
+                escaped_affected = html.escape(affected)
+
                 st.markdown(f"""
                 <div class="card-container">
                     <div style="margin-bottom: 20px;">
-                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
+                        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6B7280;
                                     text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Incident</div>
-                        <div style="font-family: 'Outfit', sans-serif; font-size: 1rem; color: #f1f5f9;">{incident_desc}</div>
+                        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; color: #F9FAFB;">{escaped_incident}</div>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px;">
                         <div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
+                            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6B7280;
                                         text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Root Cause</div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; color: #f43f5e; font-weight: 600;">{root_cause}</div>
+                            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.95rem; color: #EF4444; font-weight: 600;">{escaped_root_cause}</div>
                         </div>
                         <div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
+                            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6B7280;
                                         text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Affected Services</div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; color: #f59e0b;">{affected}</div>
+                            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.95rem; color: #f59e0b;">{escaped_affected}</div>
                         </div>
                         <div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
+                            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6B7280;
                                         text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Total Errors</div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; color: #14b8a6; font-weight: 600;">{total_errors:,}</div>
+                            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.95rem; color: #10B981; font-weight: 600;">{total_errors:,}</div>
                         </div>
                     </div>
                     <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
-                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
+                        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6B7280;
                                     text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">Recommended Actions</div>
-                        <div style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: #94a3b8; line-height: 1.8;">
+                        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; color: #9CA3AF; line-height: 1.8;">
                             <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;">
-                                <span style="color: #14b8a6;">1.</span>
-                                <span>Review error logs from <span style="color: #f1f5f9; font-weight: 500;">{root_cause}</span> service</span>
+                                <span style="color: #10B981;">1.</span>
+                                <span>Review error logs from <span style="color: #F9FAFB; font-weight: 500;">{escaped_root_cause}</span> service</span>
                             </div>
                             <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;">
-                                <span style="color: #14b8a6;">2.</span>
+                                <span style="color: #10B981;">2.</span>
                                 <span>Check recent deployments or configuration changes</span>
                             </div>
                             <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;">
-                                <span style="color: #14b8a6;">3.</span>
+                                <span style="color: #10B981;">3.</span>
                                 <span>Verify database and external service connectivity</span>
                             </div>
                             <div style="display: flex; align-items: flex-start; gap: 10px;">
-                                <span style="color: #14b8a6;">4.</span>
+                                <span style="color: #10B981;">4.</span>
                                 <span>Consider enabling circuit breakers if not already active</span>
                             </div>
                         </div>
@@ -1329,10 +1510,10 @@ with tab3:
         st.markdown("""
         <div class="card-container" style="text-align: center; padding: 60px;">
             <div style="font-size: 3rem; margin-bottom: 16px;">📜</div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; color: #f1f5f9; margin-bottom: 8px;">
+            <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.25rem; color: #F9FAFB; margin-bottom: 8px;">
                 Connect to Elasticsearch
             </div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #64748b;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.875rem; color: #6B7280;">
                 Configure your connection to search logs
             </div>
         </div>
@@ -1340,7 +1521,7 @@ with tab3:
     else:
         # Search description
         st.markdown("""
-        <div style="font-family: 'Outfit', sans-serif; font-size: 0.875rem; color: #94a3b8; margin-bottom: 16px;">
+        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; color: #9CA3AF; margin-bottom: 16px;">
             Search through your logs with powerful filters. Use keywords, error types, or trace IDs to find what you're looking for.
         </div>
         """, unsafe_allow_html=True)
@@ -1360,30 +1541,49 @@ with tab3:
         with col3:
             level_filter = st.selectbox("Level", ["All Levels", "error", "warn", "info", "debug"], label_visibility="collapsed")
         with col4:
-            search_btn = st.button("Search", type="primary", use_container_width=True)
+            search_btn = st.button("Search", type="primary", width="stretch")
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         if search_btn and search_query:
-            with st.spinner("🔍 Searching logs..."):
-                results = search_logs_data(
-                    search_query,
-                    time_range,
-                    service_filter,
-                    level_filter,
+            # Create placeholder for loader
+            loader_placeholder = st.empty()
+
+            # Show custom loader
+            with loader_placeholder.container():
+                render_loader(
+                    "Searching logs...",
+                    f"Querying Elasticsearch for \"{search_query}\"",
+                    [
+                        {"name": "Connect", "status": "complete"},
+                        {"name": "Query", "status": "active"},
+                        {"name": "Process", "status": "pending"},
+                    ]
                 )
+
+            # Run search
+            results = search_logs_data(
+                search_query,
+                time_range,
+                service_filter,
+                level_filter,
+            )
+
+            # Clear loader
+            loader_placeholder.empty()
 
             if results:
                 # Results header with count
+                escaped_query = html.escape(search_query)
                 st.markdown(f"""
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                    <div style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: #94a3b8;">
-                        Found <span style="color: #14b8a6; font-weight: 600; font-family: 'JetBrains Mono', monospace;">{results['total']}</span> logs matching
+                    <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; color: #9CA3AF;">
+                        Found <span style="color: #10B981; font-weight: 600; font-family: 'IBM Plex Mono', monospace;">{results['total']}</span> logs matching
                     </div>
                     <div style="background: rgba(20, 184, 166, 0.15); border: 1px solid rgba(20, 184, 166, 0.3);
-                                padding: 4px 12px; border-radius: 20px; font-family: 'JetBrains Mono', monospace;
+                                padding: 4px 12px; border-radius: 20px; font-family: 'IBM Plex Mono', monospace;
                                 font-size: 0.8rem; color: #5eead4;">
-                        "{search_query}"
+                        "{escaped_query}"
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1403,25 +1603,13 @@ with tab3:
 
                     df = pd.DataFrame(log_data)
 
-                    # Style the dataframe with dark theme colors
-                    def highlight_log_level(val):
-                        if val == "ERROR":
-                            return "background-color: rgba(244, 63, 94, 0.2); color: #fda4af; font-weight: 600;"
-                        elif val == "WARN":
-                            return "background-color: rgba(245, 158, 11, 0.2); color: #fde047; font-weight: 600;"
-                        elif val == "INFO":
-                            return "color: #93c5fd;"
-                        elif val == "DEBUG":
-                            return "color: #64748b;"
-                        return ""
-
-                    styled_df = df.style.applymap(highlight_log_level, subset=["Level"])
-                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                    # Display the dataframe
+                    st.dataframe(df, use_container_width=True, hide_index=True)
                 else:
                     st.markdown("""
                     <div class="card-container" style="text-align: center; padding: 40px;">
                         <div style="font-size: 2rem; margin-bottom: 12px;">🔍</div>
-                        <div style="font-family: 'Outfit', sans-serif; font-size: 1rem; color: #94a3b8;">
+                        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; color: #9CA3AF;">
                             No logs found matching your search criteria
                         </div>
                     </div>
@@ -1437,10 +1625,10 @@ with tab4:
         st.markdown("""
         <div class="card-container" style="text-align: center; padding: 60px;">
             <div style="font-size: 3rem; margin-bottom: 16px;">📚</div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; color: #f1f5f9; margin-bottom: 8px;">
+            <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.25rem; color: #F9FAFB; margin-bottom: 8px;">
                 Connect to Elasticsearch
             </div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; color: #64748b;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.875rem; color: #6B7280;">
                 Configure your connection to view investigation history
             </div>
         </div>
@@ -1451,7 +1639,7 @@ with tab4:
         client = get_es_client()
 
         st.markdown("""
-        <div style="font-family: 'Outfit', sans-serif; font-size: 0.875rem; color: #94a3b8; margin-bottom: 16px;">
+        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; color: #9CA3AF; margin-bottom: 16px;">
             Search through past incidents to find similar issues and learn from previous resolutions.
         </div>
         """, unsafe_allow_html=True)
@@ -1470,48 +1658,49 @@ with tab4:
             if results.get("incidents"):
                 st.markdown(f"""
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                    <div style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: #94a3b8;">
-                        Found <span style="color: #a855f7; font-weight: 600; font-family: 'JetBrains Mono', monospace;">{results['total']}</span> past incidents
+                    <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; color: #9CA3AF;">
+                        Found <span style="color: #a855f7; font-weight: 600; font-family: 'IBM Plex Mono', monospace;">{results['total']}</span> past incidents
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
                 for inc in results["incidents"]:
-                    incident_id = inc.get('id', 'Unknown')
-                    incident_date = inc.get('timestamp', '')[:10] if inc.get('timestamp') else 'Unknown date'
-                    root_cause = inc.get('root_cause', 'Not recorded')
-                    services = ', '.join(inc.get('affected_services', [])) or 'None'
-                    resolution = inc.get('resolution', 'Not recorded')
+                    incident_id = html.escape(inc.get('id', 'Unknown'))
+                    incident_date = html.escape(inc.get('timestamp', '')[:10] if inc.get('timestamp') else 'Unknown date')
+                    root_cause = html.escape(inc.get('root_cause', 'Not recorded'))
+                    services = html.escape(', '.join(inc.get('affected_services', [])) or 'None')
+                    resolution = html.escape(inc.get('resolution', 'Not recorded'))
 
                     with st.expander(f"📋 **{incident_id}** — {incident_date}"):
                         st.markdown(f"""
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
                             <div>
-                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
+                                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6B7280;
                                             text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Root Cause</div>
-                                <div style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: #f43f5e;">{root_cause}</div>
+                                <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; color: #EF4444;">{root_cause}</div>
                             </div>
                             <div>
-                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
+                                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6B7280;
                                             text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Affected Services</div>
-                                <div style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: #f59e0b;">{services}</div>
+                                <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; color: #f59e0b;">{services}</div>
                             </div>
                         </div>
                         <div style="margin-bottom: 12px;">
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748b;
+                            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #6B7280;
                                         text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Resolution</div>
-                            <div style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: #94a3b8;">{resolution}</div>
+                            <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; color: #9CA3AF;">{resolution}</div>
                         </div>
                         """, unsafe_allow_html=True)
 
                         if inc.get("suggestions"):
+                            suggestions = html.escape(inc.get('suggestions', ''))
                             st.markdown(f"""
                             <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2);
                                         border-radius: 8px; padding: 12px; margin-top: 12px;">
-                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #a855f7;
+                                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: #a855f7;
                                             text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">💡 Suggestions</div>
-                                <div style="font-family: 'Outfit', sans-serif; font-size: 0.875rem; color: #c4b5fd;">
-                                    {inc.get('suggestions')}
+                                <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; color: #c4b5fd;">
+                                    {suggestions}
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
@@ -1519,10 +1708,10 @@ with tab4:
                 st.markdown("""
                 <div class="card-container" style="text-align: center; padding: 40px;">
                     <div style="font-size: 2rem; margin-bottom: 12px;">📭</div>
-                    <div style="font-family: 'Outfit', sans-serif; font-size: 1rem; color: #f1f5f9; margin-bottom: 8px;">
+                    <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; color: #F9FAFB; margin-bottom: 8px;">
                         No past incidents found
                     </div>
-                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #64748b;">
+                    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: #6B7280;">
                         Run some investigations first to build your knowledge base
                     </div>
                 </div>
@@ -1531,10 +1720,10 @@ with tab4:
             st.markdown("""
             <div class="card-container" style="text-align: center; padding: 48px;">
                 <div style="font-size: 2.5rem; margin-bottom: 16px;">📚</div>
-                <div style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: #f1f5f9; margin-bottom: 8px;">
+                <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.1rem; color: #F9FAFB; margin-bottom: 8px;">
                     Search Your Investigation History
                 </div>
-                <div style="font-family: 'Outfit', sans-serif; font-size: 0.875rem; color: #64748b;">
+                <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; color: #6B7280;">
                     Enter a keyword above to find past incidents and their resolutions
                 </div>
             </div>
@@ -1545,9 +1734,9 @@ with tab4:
 st.markdown("""
 <div class="footer-text">
     <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 8px;">
-        <span style="color: #14b8a6;">●</span>
+        <span style="color: #10B981;">●</span>
         <span>LogSleuth v0.1.0</span>
-        <span style="color: #64748b;">|</span>
+        <span style="color: #6B7280;">|</span>
         <span>Powered by Elasticsearch</span>
         <span style="color: #a855f7;">●</span>
     </div>

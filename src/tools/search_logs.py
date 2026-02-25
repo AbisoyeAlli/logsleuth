@@ -132,10 +132,10 @@ def search_logs(
     ]
 
     if service_name:
-        must_clauses.append({"term": {"service.name.keyword": service_name}})
+        must_clauses.append({"term": {"service.name": service_name}})
 
     if log_level:
-        must_clauses.append({"term": {"log.level.keyword": log_level}})
+        must_clauses.append({"term": {"log.level": log_level}})
 
     query = {
         "query": {"bool": {"must": must_clauses}},
